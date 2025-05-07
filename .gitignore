@@ -1,0 +1,17 @@
+#Środowisko wirtualne
+venv/
+
+#Pliki z kluczem do bazy danych
+app/konfiguracja/serviceAccountKey.json
+
+#Zmienne środowiskowe
+.env
+
+#Cache Pythona
+__pycache__/
+app/routery/__pycache__/
+app/routery/dziekanat/__pycache__/
+app/routery/student/__pycache__/
+app/routery/wykladowca/__pycache__/
+app/serwisy/__pycache__/
+app/repozytoria/__pycache__/
