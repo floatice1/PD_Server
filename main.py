@@ -8,9 +8,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-for routery in wszystkie_routery:
-    for router in routery:
-        app.include_router(router)
+for router in wszystkie_routery:
+    app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn

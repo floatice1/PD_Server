@@ -8,7 +8,7 @@ class RepozytoriumUzytkownikow:
     COLLECTION_NAME = 'users'
     
     @classmethod
-    async def utworz_uzytkownika(cls, dane_uzytkownika: UzytkownikTworzenie) -> Uzytkownik:
+    async def utworz_uzytkownika(cls, dane_uzytkownika: Dict[str, Any]) -> str:
         try:
             firebase_user = auth.create_user(
                 email=dane_uzytkownika.email,
@@ -28,12 +28,7 @@ class RepozytoriumUzytkownikow:
             }
             user_doc_ref.set(user_info)
             
-            return Uzytkownik(
-                uid=firebase_user.uid,
-                email=dane_uzytkownika.email,
-                imie=dane_uzytkownika.imie,
-                rola=dane_uzytkownika.rola
-            )
+            return user_info['uid']
         except Exception as e:
             raise e
     
@@ -53,32 +48,41 @@ class RepozytoriumUzytkownikow:
         return users
     
     @classmethod
-    async def aktualizuj_uzytkownika(cls, user_id: str, dane_uzytkownika: UzytkownikTworzenie) -> Uzytkownik:
+    async def aktualizuj_uzytkownika(cls, user_id: str, dane_uzytkownika: Dict[str, Any]) -> bool:
         try:
+            user_doc_ref = db.collection(cls.COLLECTION_NAME).document(user_id)
+            user_doc = user_doc_ref.get()
+    
+            if not user_doc.exists:
+                return False
+    
+            update_data = {}
+            if 'email' in dane_uzytkownika:
+                update_data['email'] = dane_uzytkownika['email']
+            if 'haslo' in dane_uzytkownika:
+                update_data['password'] = dane_uzytkownika['haslo']
+            if 'imie' in dane_uzytkownika:
+                update_data['display_name'] = dane_uzytkownika['imie']
+    
             firebase_user = auth.update_user(
                 user_id,
-                email=dane_uzytkownika.email,
-                password=dane_uzytkownika.haslo,
-                display_name=dane_uzytkownika.imie
+                **update_data
             )
-
-            auth.set_custom_user_claims(firebase_user.uid, {"role": dane_uzytkownika.rola.value})
-
-            user_doc_ref = db.collection(cls.COLLECTION_NAME).document(user_id)
-            user_info = {
-                'email': dane_uzytkownika.email,
-                'name': dane_uzytkownika.imie,
-                'role': dane_uzytkownika.rola.value,
-                'updated_at': firestore.SERVER_TIMESTAMP
-            }
+    
+            if 'rola' in dane_uzytkownika:
+                auth.set_custom_user_claims(firebase_user.uid, {"role": dane_uzytkownika['rola'].value})
+    
+            user_info = {}
+            if 'email' in dane_uzytkownika:
+                user_info['email'] = dane_uzytkownika['email']
+            if 'imie' in dane_uzytkownika:
+                user_info['name'] = dane_uzytkownika['imie']
+            if 'rola' in dane_uzytkownika:
+                user_info['role'] = dane_uzytkownika['rola'].value
+            user_info['updated_at'] = firestore.SERVER_TIMESTAMP
             user_doc_ref.update(user_info)
             
-            return Uzytkownik(
-                uid=user_id,
-                email=dane_uzytkownika.email,
-                imie=dane_uzytkownika.imie,
-                rola=dane_uzytkownika.rola
-            )
+            return True
         except Exception as e:
             raise e
     

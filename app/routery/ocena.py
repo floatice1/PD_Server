@@ -5,7 +5,7 @@ from app.modele.ocena import OcenaTworzenie
 
 router = APIRouter(
     prefix="/oceny",
-    tags=["dziekanat - oceny"],
+    tags=["oceny"],
     responses={404: {"message": "Nie znaleziono"}, 403: {"message": "Brak dostępu"}}
 )
 
@@ -76,22 +76,4 @@ async def usun_ocene(ocena_id: Annotated[str, Path(title="ID oceny")]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Błąd podczas usuwania oceny: {str(e)}"
-        )
-
-@router.put("/grupa/{grupa_id}/zbiorcza_aktualizacja", summary="Zbiorcza aktualizacja ocen w grupie")
-async def zbiorcza_aktualizacja_ocen(grupa_id: Annotated[str, Path(title="ID grupy")], lista_ocen: Annotated[List[Dict[str, Any]], Body()]):
-    try:
-        results = []
-        for ocena in lista_ocen:
-            try:
-                ocena_obj = OcenaTworzenie(**ocena)
-                created = await SerwisOcen.utworz_ocene(ocena_obj)
-                results.append({"status": "success", "ocenaId": created.ocenaId})
-            except Exception as e:
-                results.append({"status": "error", "message": str(e)})
-        return {"message": f"Zbiorcza aktualizacja dla grupy {grupa_id}", "results": results}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Błąd podczas zbiorczej aktualizacji ocen: {str(e)}"
         )

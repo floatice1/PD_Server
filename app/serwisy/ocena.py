@@ -8,6 +8,10 @@ class SerwisOcen:
         return await RepozytoriumOcen.utworz_ocene(dane_oceny)
 
     @staticmethod
+    async def pobierz_wszystkie_oceny() -> List[Dict[str, Any]]:
+        return await RepozytoriumOcen.pobierz_wszystkie_oceny()
+
+    @staticmethod
     async def pobierz_ocene_po_id(ocena_id: str) -> Optional[Dict[str, Any]]:
         return await RepozytoriumOcen.pobierz_ocene_po_id(ocena_id)
 

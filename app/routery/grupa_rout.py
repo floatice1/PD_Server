@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Path, Body, HTTPException, status
 from typing import Annotated, Dict, Any
-from app.serwisy.grupa import SerwisGrup
-from app.modele.grupa import GrupaTworzenie
+from app.serwisy.grupa_serw import SerwisGrup
+from app.modele.grupa import GrupaAktualizacja, GrupaTworzenie
 
 router = APIRouter(
     prefix="/grupy",
-    tags=["dziekanat - grupy"],
-    responses={404: {"message": "Nie znaleziono"}, 403: {"message": "Brak dostępu"}}
+    tags=["grupy"],
+    responses={404: {"message": "Nie znaleziono"}, 403: {"message": "Brak dostępu"}, 400: {"message": "Błąd danych"}}
 )
 
 @router.get("/", summary="Pobierz listę wszystkich grup")
@@ -47,21 +47,28 @@ async def utworz_grupe(dane_grupy: Annotated[Dict[str, Any], Body()]):
         )
 
 @router.put("/{grupa_id}", summary="Zaktualizuj dane grupy")
-async def aktualizuj_grupe(grupa_id: Annotated[str, Path(title="ID grupy")], dane_aktualizacji: Annotated[Dict[str, Any], Body()]):
+async def aktualizuj_grupe(grupa_id: Annotated[str, Path(title="ID grupy")], dane_aktualizacji: Annotated[GrupaAktualizacja, Body()]):
     try:
-        grupa = GrupaTworzenie(**dane_aktualizacji)
-        success = await SerwisGrup.aktualizuj_grupe(grupa_id, grupa)
-        if not success:
+        zaktualizowana_grupa = await SerwisGrup.aktualizuj_grupe(grupa_id, dane_aktualizacji.model_dump(exclude_unset=True))
+        if not zaktualizowana_grupa:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Grupa o ID {grupa_id} nie została znaleziona"
+                detail=f"Grupa o ID {grupa_id} nie istnieje"
             )
-        return {"message": f"Grupa {grupa_id} zaktualizowana pomyślnie"}
-    except Exception as e:
+        return {"message": f"Grupa {grupa_id} zaktualizowana pomyślnie", "updated_data": zaktualizowana_grupa}
+    except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Błąd podczas aktualizacji grupy: {str(e)}"
+            detail=str(ve)
         )
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Błąd podczas aktualizacji grupy: {str(e)}"
+            )
 
 @router.delete("/{grupa_id}", summary="Usuń grupę")
 async def usun_grupe(grupa_id: Annotated[str, Path(title="ID grupy")]):
@@ -112,23 +119,4 @@ async def usun_studenta_z_grupy(grupa_id: Annotated[str, Path(title="ID grupy")]
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Błąd podczas usuwania studenta z grupy: {str(e)}"
-        )
-
-@router.put("/{grupa_id}/nauczyciel/{nauczyciel_id}", summary="Przypisz/zmień nauczyciela prowadzącego grupę")
-async def przypisz_nauczyciela_do_grupy(
-    grupa_id: Annotated[str, Path(title="ID grupy")],
-    nauczyciel_id: Annotated[str, Path(title="ID nauczyciela")]
-):
-    try:
-        success = await SerwisGrup.zmien_wykladowce_grupy(grupa_id, nauczyciel_id)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Grupa o ID {grupa_id} nie została znaleziona"
-            )
-        return {"message": f"Nauczyciel {nauczyciel_id} przypisany do grupy {grupa_id} pomyślnie"}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Błąd podczas przypisywania nauczyciela do grupy: {str(e)}"
         )

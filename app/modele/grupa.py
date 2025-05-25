@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import Optional, List
 
 class GrupaBazowa(BaseModel):
     nazwa: str
@@ -18,3 +18,8 @@ class PrzypiszStudentaDoGrupy(BaseModel):
 
 class PrzypiszWykladowceDoGrupy(BaseModel):
     wykladowcaId: str
+
+class GrupaAktualizacja(BaseModel):
+    nazwa: Optional[str] = None
+    przedmiotId: Optional[str] = None
+    wykladowcaId: Optional[str] = None

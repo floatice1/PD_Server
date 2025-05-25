@@ -5,7 +5,7 @@ from app.modele.przedmiot import PrzedmiotTworzenie
 
 router = APIRouter(
     prefix="/przedmioty",
-    tags=["dziekanat - przedmioty"],
+    tags=["przedmioty"],
     responses={404: {"message": "Nie znaleziono"}, 403: {"message": "Brak dostępu"}}
 )
 

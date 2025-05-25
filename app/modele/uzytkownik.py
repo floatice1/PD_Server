@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, EmailStr
 
 class Rola(str, Enum):
     student = "student"
@@ -16,3 +18,13 @@ class UzytkownikTworzenie(UzytkownikBazowy):
 
 class Uzytkownik(UzytkownikBazowy):
     uid: str
+
+class UzytkownikAktualizacja(BaseModel):
+    email: Optional[EmailStr] = None
+    haslo: Optional[str] = None
+    imie: Optional[str] = None
+    rola: Optional[Rola] = None
+
+class UzytkownikLogin(BaseModel):
+    email: EmailStr
+    haslo: str

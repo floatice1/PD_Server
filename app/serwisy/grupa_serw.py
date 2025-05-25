@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from app.modele.grupa import Grupa, GrupaTworzenie
-from app.repozytoria.grupa import RepozytoriumGrup
+from app.repozytoria.grupa_rep import RepozytoriumGrup
 
 class SerwisGrup:
     @staticmethod
@@ -16,8 +16,13 @@ class SerwisGrup:
         return await RepozytoriumGrup.pobierz_wszystkie_grupy()
 
     @staticmethod
-    async def aktualizuj_grupe(grupa_id: str, dane_grupy: GrupaTworzenie) -> bool:
-        return await RepozytoriumGrup.aktualizuj_grupe(grupa_id, dane_grupy)
+    async def aktualizuj_grupe(grupa_id: str, dane_aktualizacji: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        if not dane_aktualizacji:
+            raise ValueError("Nie podano danych do aktualizacji")
+
+        zaktualizowano = await RepozytoriumGrup.aktualizuj_grupe(grupa_id, dane_aktualizacji)
+        if zaktualizowano:
+            return await RepozytoriumGrup.pobierz_grupe_po_id(grupa_id)
 
     @staticmethod
     async def usun_grupe(grupa_id: str) -> bool:

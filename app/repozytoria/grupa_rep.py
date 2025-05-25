@@ -51,16 +51,38 @@ class RepozytoriumGrup:
         return grupy
     
     @classmethod
-    async def aktualizuj_grupe(cls, grupa_id: str, dane_grupy: GrupaTworzenie) -> bool:
+    async def aktualizuj_grupe(cls, grupa_id: str, dane_aktualizacji: Dict[str, Any]) -> bool:
         try:
-            grupa_doc = db.collection(cls.COLLECTION_NAME).document(grupa_id)
-            grupa_info = {
-                'name': dane_grupy.nazwa,
-                'subjectId': dane_grupy.przedmiotId,
-                'lecturerId': dane_grupy.wykladowcaId,
-                'updatedAt': firestore.SERVER_TIMESTAMP
-            }
-            grupa_doc.update(grupa_info)
+            grupa_ref = db.collection(cls.COLLECTION_NAME).document(grupa_id)
+            grupa_doc = grupa_ref.get()
+
+            if not grupa_doc.exists:
+                return False
+
+            pola_do_zapisu = {}
+            if 'nazwa' in dane_aktualizacji:
+                pola_do_zapisu['name'] = dane_aktualizacji['nazwa']
+
+            if 'przedmiotId' in dane_aktualizacji:
+                subject_id = dane_aktualizacji['przedmiotId']
+                subject_doc = db.collection('subjects').document(subject_id).get()
+                if not subject_doc.exists:
+                    raise ValueError(f"Przedmiot o ID {subject_id} nie istnieje")
+                pola_do_zapisu['subjectId'] = subject_id
+
+            if 'wykladowcaId' in dane_aktualizacji:
+                lecturer_id = dane_aktualizacji['wykladowcaId']
+                lecturer_doc = db.collection('users').document(lecturer_id).get()
+                if not lecturer_doc.exists:
+                    raise ValueError(f"Użytkownik o ID {lecturer_id} nie istnieje")
+                lecturer_data = lecturer_doc.to_dict()
+                if lecturer_data.get('role') != 'wykladowca':
+                    raise ValueError(f"Użytkownik o ID {lecturer_id} nie jest wykładowcą")
+                pola_do_zapisu['lecturerId'] = dane_aktualizacji['wykladowcaId']
+            
+            pola_do_zapisu['updatedAt'] = firestore.SERVER_TIMESTAMP
+            
+            grupa_ref.update(pola_do_zapisu)
             return True
         except Exception as e:
             raise e
