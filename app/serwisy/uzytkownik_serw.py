@@ -1,71 +1,74 @@
+"""Moduł serwisowy dla zarządzania użytkownikami."""
+
 from typing import List, Optional, Dict, Any
-from app.modele.uzytkownik import Uzytkownik, UzytkownikTworzenie, UzytkownikLogin
+
+from firebase_admin import auth
+
+from app.modele.uzytkownik import Uzytkownik, UzytkownikTworzenie
 from app.repozytoria.uzytkownik_rep import RepozytoriumUzytkownikow
-from app.konfiguracja.firebase_config import auth, db
-from firebase_admin import auth as firebase_auth
-from datetime import datetime, timedelta
-import json
+
 
 class SerwisUzytkownikow:
-    @staticmethod
-    async def utworz_uzytkownika(dane_uzytkownika: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        nowy_uzytkownik_id = await RepozytoriumUzytkownikow.utworz_uzytkownika(dane_uzytkownika)
-        if nowy_uzytkownik_id:
-            return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(nowy_uzytkownik_id)
+    """Klasa serwisowa do obsługi operacji na użytkownikach."""
 
     @staticmethod
-    async def pobierz_uzytkownika_po_id(user_id: str) -> Optional[Dict[str, Any]]:
-        return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(user_id)
+    async def utworz_uzytkownika(dane_uzytkownika: UzytkownikTworzenie) -> Uzytkownik:
+        """Tworzy nowego użytkownika."""
+        return await RepozytoriumUzytkownikow.utworz_uzytkownika(dane_uzytkownika)
+
+    @staticmethod
+    async def pobierz_uzytkownika_po_id(uzytkownik_id: str) -> Optional[Dict[str, Any]]:
+        """Pobiera użytkownika po jego identyfikatorze."""
+        return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(uzytkownik_id)
 
     @staticmethod
     async def pobierz_wszystkich_uzytkownikow() -> List[Dict[str, Any]]:
+        """Pobiera listę wszystkich użytkowników."""
         return await RepozytoriumUzytkownikow.pobierz_wszystkich_uzytkownikow()
 
     @staticmethod
-    async def aktualizuj_uzytkownika(user_id: str, dane_uzytkownika: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        if not dane_uzytkownika:
+    async def aktualizuj_uzytkownika(
+        uzytkownik_id: str,
+        dane_aktualizacji: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Aktualizuje dane istniejącego użytkownika."""
+        if not dane_aktualizacji:
             raise ValueError("Nie podano danych do aktualizacji")
 
-        zaktualizowano = await RepozytoriumUzytkownikow.aktualizuj_uzytkownika(user_id, dane_uzytkownika)
+        zaktualizowano = await RepozytoriumUzytkownikow.aktualizuj_uzytkownika(
+            uzytkownik_id,
+            dane_aktualizacji
+        )
         if zaktualizowano:
-            return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(user_id)
+            return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(uzytkownik_id)
+        return None
 
     @staticmethod
-    async def usun_uzytkownika(user_id: str) -> bool:
-        return await RepozytoriumUzytkownikow.usun_uzytkownika(user_id)
+    async def usun_uzytkownika(uzytkownik_id: str) -> bool:
+        """Usuwa użytkownika po jego identyfikatorze."""
+        return await RepozytoriumUzytkownikow.usun_uzytkownika(uzytkownik_id)
 
     @staticmethod
-    async def zaloguj_uzytkownika(dane_logowania: UzytkownikLogin) -> Optional[Dict[str, Any]]:
+    async def generuj_token_resetu_hasla(email: str) -> str:
+        """Generuje token do resetowania hasła dla podanego adresu email."""
         try:
-            try:
-                user = auth.get_user_by_email(dane_logowania.email)
-            except firebase_auth.UserNotFoundError:
-                return None
-            
-            custom_token = auth.create_custom_token(user.uid)
-            
-            user_data = await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(user.uid)
-            
-            return {
-                "uid": user.uid,
-                "email": user.email,
-                "token": custom_token.decode('utf-8'),
-                "role": user_data.get('role') if user_data else None,
-                "name": user_data.get('name') if user_data else None
-            }
-            
+            link = auth.generate_password_reset_link(email)
+            return link
         except Exception as e:
-            print(f"Błąd logowania: {str(e)}")
-            return None
-    
+            print(f"Błąd podczas generowania linku resetu hasła: {e}")
+            raise ValueError("Nie udało się wygenerować linku resetu hasła.") from e
+
     @staticmethod
-    async def weryfikuj_token(token: str) -> Optional[Dict[str, Any]]:
+    async def generuj_token_weryfikacji_emaila(email: str) -> str:
+        """Generuje token do weryfikacji adresu email dla podanego adresu email."""
         try:
-            decoded_token = auth.verify_id_token(token)
-            uid = decoded_token['uid']
-            
-            user_data = await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(uid)
-            return user_data
+            link = auth.generate_email_verification_link(email)
+            return link
         except Exception as e:
-            print(f"Błąd weryfikacji tokenu: {str(e)}")
-            return None
+            print(f"Błąd podczas generowania linku weryfikacji emaila: {e}")
+            raise ValueError("Nie udało się wygenerować linku weryfikacji emaila.") from e
+
+    @staticmethod
+    async def pobierz_uzytkownika_po_emailu(email: str) -> Optional[Dict[str, Any]]:
+        """Pobiera użytkownika po jego adresie email."""
+        return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_emailu(email)

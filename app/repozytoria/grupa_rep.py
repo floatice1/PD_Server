@@ -1,14 +1,18 @@
-from firebase_admin import firestore
+"""Repozytorium do zarządzania danymi grup w Firestore."""
+
 from typing import Dict, List, Optional, Any
+from firebase_admin import firestore
 
 from app.modele.grupa import Grupa, GrupaTworzenie
 from app.konfiguracja.firebase_config import db
 
 class RepozytoriumGrup:
+    """Klasa repozytorium do interakcji z kolekcją 'groups' w Firestore."""
     COLLECTION_NAME = 'groups'
-    
+
     @classmethod
     async def utworz_grupe(cls, dane_grupy: GrupaTworzenie) -> Grupa:
+        """Tworzy nową grupę w Firestore."""
         try:
             subject_doc = db.collection('subjects').document(dane_grupy.przedmiotId).get()
             if not subject_doc.exists:
@@ -24,7 +28,7 @@ class RepozytoriumGrup:
                 'createdAt': firestore.SERVER_TIMESTAMP
             }
             grupa_doc_ref.set(grupa_info)
-            
+
             return Grupa(
                 grupaId=grupa_doc_ref.id,
                 nazwa=dane_grupy.nazwa,
@@ -34,24 +38,27 @@ class RepozytoriumGrup:
             )
         except Exception as e:
             raise e
-    
+
     @classmethod
     async def pobierz_grupe_po_id(cls, grupa_id: str) -> Optional[Dict[str, Any]]:
+        """Pobiera dane grupy na podstawie jej ID."""
         grupa_doc = db.collection(cls.COLLECTION_NAME).document(grupa_id).get()
         if grupa_doc.exists:
             return grupa_doc.to_dict()
         return None
-    
+
     @classmethod
     async def pobierz_wszystkie_grupy(cls) -> List[Dict[str, Any]]:
+        """Pobiera dane wszystkich grup z Firestore."""
         grupy = []
         grupa_docs = db.collection(cls.COLLECTION_NAME).stream()
         for doc in grupa_docs:
             grupy.append(doc.to_dict())
         return grupy
-    
+
     @classmethod
     async def aktualizuj_grupe(cls, grupa_id: str, dane_aktualizacji: Dict[str, Any]) -> bool:
+        """Aktualizuje dane istniejącej grupy."""
         try:
             grupa_ref = db.collection(cls.COLLECTION_NAME).document(grupa_id)
             grupa_doc = grupa_ref.get()
@@ -79,29 +86,31 @@ class RepozytoriumGrup:
                 if lecturer_data.get('role') != 'wykladowca':
                     raise ValueError(f"Użytkownik o ID {lecturer_id} nie jest wykładowcą")
                 pola_do_zapisu['lecturerId'] = dane_aktualizacji['wykladowcaId']
-            
+
             pola_do_zapisu['updatedAt'] = firestore.SERVER_TIMESTAMP
-            
+
             grupa_ref.update(pola_do_zapisu)
             return True
         except Exception as e:
             raise e
-    
+
     @classmethod
     async def usun_grupe(cls, grupa_id: str) -> bool:
+        """Usuwa grupę z Firestore."""
         try:
             db.collection(cls.COLLECTION_NAME).document(grupa_id).delete()
             return True
         except Exception as e:
             raise e
-    
+
     @classmethod
     async def przypisz_studenta_do_grupy(cls, grupa_id: str, student_id: str) -> bool:
+        """Przypisuje studenta do grupy."""
         try:
             user_doc = db.collection('users').document(student_id).get()
             if not user_doc.exists:
                 raise ValueError(f"Użytkownik o ID {student_id} nie istnieje")
-            
+
             user_data = user_doc.to_dict()
             if user_data.get('role') != 'student':
                 raise ValueError(f"Użytkownik o ID {student_id} nie jest studentem")
@@ -119,18 +128,19 @@ class RepozytoriumGrup:
             return True
         except Exception as e:
             raise e
-    
+
     @classmethod
     async def usun_studenta_z_grupy(cls, grupa_id: str, student_id: str) -> bool:
+        """Usuwa studenta z grupy."""
         try:
             user_doc = db.collection('users').document(student_id).get()
             if not user_doc.exists:
                 raise ValueError(f"Użytkownik o ID {student_id} nie istnieje")
-            
+
             user_data = user_doc.to_dict()
             if user_data.get('role') != 'student':
                 raise ValueError(f"Użytkownik o ID {student_id} nie jest studentem")
-                
+
             grupa_doc = db.collection(cls.COLLECTION_NAME).document(grupa_id)
             grupa_doc.update({
                 'studentsIds': firestore.ArrayRemove([student_id]),
@@ -139,14 +149,15 @@ class RepozytoriumGrup:
             return True
         except Exception as e:
             raise e
-    
+
     @classmethod
     async def zmien_wykladowce_grupy(cls, grupa_id: str, wykladowca_id: str) -> bool:
+        """Zmienia wykładowcę przypisanego do grupy."""
         try:
             user_doc = db.collection('users').document(wykladowca_id).get()
             if not user_doc.exists:
                 raise ValueError(f"Użytkownik o ID {wykladowca_id} nie istnieje")
-            
+
             user_data = user_doc.to_dict()
             if user_data.get('role') != 'wykladowca':
                 raise ValueError(f"Użytkownik o ID {wykladowca_id} nie jest wykładowcą")

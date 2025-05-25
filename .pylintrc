@@ -1,0 +1,24 @@
+[MESSAGES CONTROL]
+disable=E1101, no-member
+
+[BASIC]
+max-line-length=100
+
+[MASTER]
+init-hook='import sys; sys.path.append("c:\\Users\\Yehor\\Documents\\USOS\\Server1")'
+
+[FORMAT]
+
+[IMPORTS]
+
+[DESIGN]
+
+[CLASSES]
+
+[FUNCTIONS]
+
+[VARIABLES]
+
+[MISCELLANEOUS]
+
+[TYPECHECK]

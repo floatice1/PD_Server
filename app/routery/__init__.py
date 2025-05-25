@@ -1,3 +1,5 @@
+"""Inicjalizacja routerów."""
+
 from .grupa_rout import router as grupa_router
 from .ocena import router as ocena_router
 from .przedmiot import router as przedmiot_router

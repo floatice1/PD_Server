@@ -1,3 +1,5 @@
+"""Główny moduł aplikacji FastAPI dla Systemu Informacji Studenckiej."""
+
 from fastapi import FastAPI
 
 from app.routery import wszystkie_routery
