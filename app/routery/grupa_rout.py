@@ -43,6 +43,8 @@ async def pobierz_grupe(
                 detail=f"Grupa o ID {grupa_id} nie została znaleziona"
             )
         return grupa
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -52,15 +54,16 @@ async def pobierz_grupe(
 
 @router.post("/", status_code=201, summary="Utwórz nową grupę")
 async def utworz_grupe(
-    dane_grupy: Annotated[Dict[str, Any], Body()]
+    dane_grupy: GrupaTworzenie
 ):
     """Tworzy nową grupę."""
     try:
-        grupa = GrupaTworzenie(**dane_grupy)
-        return await SerwisGrup.utworz_grupe(grupa)
+        return await SerwisGrup.utworz_grupe(dane_grupy)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas tworzenia grupy: {str(e)}"
         ) from e
 
@@ -72,8 +75,12 @@ async def aktualizuj_grupe(
 ):
     """Aktualizuje dane grupy na podstawie jej ID."""
     try:
+        update_data_dict = dane_aktualizacji.model_dump(exclude_unset=True)
+        if not update_data_dict:
+            raise ValueError("Nie podano danych do aktualizacji")
+
         zaktualizowana_grupa = await SerwisGrup.aktualizuj_grupe(
-            grupa_id, dane_aktualizacji.model_dump(exclude_unset=True)
+            grupa_id, update_data_dict
         )
         if not zaktualizowana_grupa:
             raise HTTPException(
@@ -87,9 +94,9 @@ async def aktualizuj_grupe(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(ve)
         ) from ve
+    except HTTPException:
+        raise
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas aktualizacji grupy: {str(e)}"
@@ -98,9 +105,9 @@ async def aktualizuj_grupe(
 
 @router.delete("/{grupa_id}", summary="Usuń grupę")
 async def usun_grupe(
-    grupa_id: Annotated[str, Path(title="ID grupy")]
+    grupa_id: Annotated[str, Path(title="ID grupy do usunięcia")]
 ):
-    """Usuwa grupę na podstawie jej ID."""
+    """Usuwa grupę o podanym ID."""
     try:
         success = await SerwisGrup.usun_grupe(grupa_id)
         if not success:
@@ -109,9 +116,11 @@ async def usun_grupe(
                 detail=f"Grupa o ID {grupa_id} nie została znaleziona"
             )
         return {"message": f"Grupa {grupa_id} usunięta pomyślnie"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas usuwania grupy: {str(e)}"
         ) from e
 
@@ -130,9 +139,11 @@ async def przypisz_studenta_do_grupy(
                 detail=f"Grupa o ID {grupa_id} nie została znaleziona"
             )
         return {"message": f"Student {student_id} przypisany do grupy {grupa_id} pomyślnie"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas przypisywania studenta do grupy: {str(e)}"
         ) from e
 
@@ -148,12 +159,13 @@ async def usun_studenta_z_grupy(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Grupa o ID {grupa_id} nie została znaleziona" \
-                    "lub student nie jest przypisany do grupy"
+                detail=f"Grupa o ID {grupa_id} nie została znaleziona lub student nie jest przypisany do grupy"
             )
         return {"message": f"Student {student_id} usunięty z grupy {grupa_id} pomyślnie"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas usuwania studenta z grupy: {str(e)}"
         ) from e

@@ -23,7 +23,7 @@ class RepozytoriumOcen:
 
             group_doc = db.collection('groups').document(dane_oceny.grupaId).get()
             if not group_doc.exists:
-                raise ValueError(f"Groupa o ID {dane_oceny.grupaId} nie istnieje")
+                raise ValueError(f"Grupa o ID {dane_oceny.grupaId} nie istnieje")
 
             grupa_data = group_doc.to_dict()
             if dane_oceny.studentId not in grupa_data.get('studentsIds', []):

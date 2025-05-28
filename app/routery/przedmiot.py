@@ -23,6 +23,8 @@ async def pobierz_wszystkie_przedmioty():
     """Pobiera listę wszystkich przedmiotów."""
     try:
         return await SerwisPrzedmiotow.pobierz_wszystkie_przedmioty()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -43,6 +45,8 @@ async def pobierz_przedmiot(
                 detail=f"Przedmiot o ID {przedmiot_id} nie został znaleziony"
             )
         return przedmiot
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -52,15 +56,16 @@ async def pobierz_przedmiot(
 
 @router.post("/", status_code=201, summary="Utwórz nowy przedmiot")
 async def utworz_przedmiot(
-    dane_przedmiotu: Annotated[Dict[str, Any], Body()]
+    dane_przedmiotu: PrzedmiotTworzenie
 ):
     """Tworzy nowy przedmiot."""
     try:
-        przedmiot = PrzedmiotTworzenie(**dane_przedmiotu)
-        return await SerwisPrzedmiotow.utworz_przedmiot(przedmiot)
+        return await SerwisPrzedmiotow.utworz_przedmiot(dane_przedmiotu)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas tworzenia przedmiotu: {str(e)}"
         ) from e
 
@@ -73,7 +78,7 @@ async def aktualizuj_przedmiot(
     """Aktualizuje dane przedmiotu na podstawie jego ID."""
     try:
         zaktualizowany_przedmiot = await SerwisPrzedmiotow.aktualizuj_przedmiot(
-            przedmiot_id, dane_aktualizacji.model_dump(exclude_unset=True)
+            przedmiot_id, dane_aktualizacji
         )
         if not zaktualizowany_przedmiot:
             raise HTTPException(
@@ -82,9 +87,11 @@ async def aktualizuj_przedmiot(
             )
         return {"message": f"Przedmiot {przedmiot_id} zaktualizowany pomyślnie",
                 "updated_data": zaktualizowany_przedmiot}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas aktualizacji przedmiotu: {str(e)}"
         ) from e
 
@@ -102,8 +109,10 @@ async def usun_przedmiot(
                 detail=f"Przedmiot o ID {przedmiot_id} nie został znaleziony"
             )
         return {"message": f"Przedmiot {przedmiot_id} usunięty pomyślnie"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas usuwania przedmiotu: {str(e)}"
         ) from e

@@ -81,10 +81,15 @@ class RepozytoriumUzytkownikow:
             if 'imie' in dane_uzytkownika:
                 update_data['display_name'] = dane_uzytkownika['imie']
 
-            firebase_user = auth.update_user(
-                user_id,
-                **update_data
-            )
+            firebase_user = None
+            if update_data:
+                firebase_user = auth.update_user(
+                    user_id,
+                    **update_data
+                )
+            else:
+                firebase_user = auth.get_user(user_id)
+
 
             if 'rola' in dane_uzytkownika:
                 auth.set_custom_user_claims(

@@ -43,6 +43,8 @@ async def pobierz_ocene(
                 detail=f"Ocena o ID {ocena_id} nie została znaleziona"
             )
         return ocena
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -73,18 +75,26 @@ async def aktualizuj_ocene(
     """Aktualizuje dane oceny na podstawie jej ID."""
     try:
         zaktualizowana_ocena = await SerwisOcen.aktualizuj_ocene(
-            ocena_id, dane_aktualizacji.model_dump(exclude_unset=True)
+            ocena_id, dane_aktualizacji
         )
         if not zaktualizowana_ocena:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Ocena o ID {ocena_id} nie istnieje"
             )
+        updated_data = await SerwisOcen.pobierz_ocene_po_id(ocena_id)
+        if not updated_data:
+             raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Błąd podczas pobierania zaktualizowanej oceny o ID {ocena_id}"
+            )
         return {"message": f"Ocena {ocena_id} zaktualizowana pomyślnie",
-                "updated_data": zaktualizowana_ocena}
+                "updated_data": updated_data}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas aktualizacji oceny: {str(e)}"
         ) from e
 
@@ -102,8 +112,10 @@ async def usun_ocene(
                 detail=f"Ocena o ID {ocena_id} nie została znaleziona"
             )
         return {"message": f"Ocena {ocena_id} usunięta pomyślnie"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Błąd podczas usuwania oceny: {str(e)}"
         ) from e

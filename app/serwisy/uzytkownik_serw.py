@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 
 from firebase_admin import auth
 
-from app.modele.uzytkownik import Uzytkownik, UzytkownikTworzenie
+from app.modele.uzytkownik import Uzytkownik, UzytkownikTworzenie, UzytkownikLogin
 from app.repozytoria.uzytkownik_rep import RepozytoriumUzytkownikow
 
 
@@ -72,3 +72,27 @@ class SerwisUzytkownikow:
     async def pobierz_uzytkownika_po_emailu(email: str) -> Optional[Dict[str, Any]]:
         """Pobiera użytkownika po jego adresie email."""
         return await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_emailu(email)
+
+    @staticmethod
+    async def zaloguj_uzytkownika(dane_logowania: UzytkownikLogin) -> Optional[Dict[str, Any]]:
+        try:
+            try:
+                user = auth.get_user_by_email(dane_logowania.email)
+            except firebase_auth.UserNotFoundError:
+                return None
+            
+            custom_token = auth.create_custom_token(user.uid)
+            
+            user_data = await RepozytoriumUzytkownikow.pobierz_uzytkownika_po_id(user.uid)
+            
+            return {
+                "uid": user.uid,
+                "email": user.email,
+                "token": custom_token.decode('utf-8'),
+                "role": user_data.get('role') if user_data else None,
+                "name": user_data.get('name') if user_data else None
+            }
+            
+        except Exception as e:
+            print(f"Błąd logowania: {str(e)}")
+            return None

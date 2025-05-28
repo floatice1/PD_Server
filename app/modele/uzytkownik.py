@@ -36,3 +36,10 @@ class UzytkownikLogin(BaseModel):
     """Model danych do logowania użytkownika."""
     email: EmailStr
     haslo: str
+
+class UzytkownikInfo(BaseModel):
+    """Model danych do pobierania informacji o użytkowniku."""
+    uid: str
+    email: str
+    name: str
+    role: str
